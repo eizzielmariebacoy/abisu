@@ -1,0 +1,409 @@
+:root {
+  --red: #c80000;
+  --black: #000;
+  --grey: #bfbbbb;
+  --text-muted: #6b6b6b;
+  --border: #8a8a8a;
+  --ink: #0f1a1f;
+
+  --chip: #f5f0f0;
+  --on-red: #ffffff;
+  --line: #d9d9d9;
+  --fg: #111111;
+  --muted: #5f5f5f;
+  --modal: #ffffff;
+  --bg: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+}
+
+body {
+  font-family: "Outfit", system-ui, sans-serif;
+  background: #fff;
+  color: var(--black);
+}
+
+.topbar {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 20px 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.greetings {
+  flex: 1;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.greetings p {
+  margin: 0;
+  font-size: 50px;
+  text-align: left;
+  font-weight: lighter;
+  line-height: 1.1;
+}
+
+.greetings span {
+  font-size: 30px;
+  text-align: left;
+  font-weight: bold;
+}
+
+.dashboard {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 28px 20px 0;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: #c80000 #f5f0f0;
+}
+
+.row::-webkit-scrollbar {
+  height: 8px;
+}
+
+.row::-webkit-scrollbar-track {
+  background: #f5f0f0;
+  border-radius: 999px;
+}
+
+.row::-webkit-scrollbar-thumb {
+  background: #c80000;
+  border-radius: 999px;
+}
+
+.chip {
+  flex: 0 0 auto;
+  border: 0;
+  background: var(--chip);
+  color: var(--red);
+  font: inherit;
+  font-size: 1rem;
+  text-transform: uppercase;
+  padding: 18px 16px;
+  min-width: 105px;
+  cursor: pointer;
+  line-height: 1.15;
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--red);
+  color: var(--on-red);
+}
+
+.chip:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--fg);
+  outline-offset: 2px;
+}
+
+form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+input {
+  font: inherit;
+  font-size: 1.05rem;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--fg);
+  width: 100%;
+}
+
+input.bad {
+  border-color: var(--red);
+  border-width: 2px;
+}
+
+.err {
+  color: var(--red);
+  font-size: .85rem;
+  min-height: 0;
+  margin: 4px 4px 0;
+}
+
+.label {
+  margin: 34px 0 10px;
+  font-size: 1rem;
+  color: var(--black);
+}
+
+#preview {
+  border: 1px solid var(--black);
+  border-radius: 18px;
+  padding: 20px;
+  min-height: 200px;
+  white-space: pre-wrap;
+  font-size: 1.1rem;
+  line-height: 1.45; 
+  
+
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.send {
+  display: block;
+  margin: 16px 0 0 auto;
+  border: 0;
+  background: var(--red);
+  color: var(--on-red);
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.logo {
+  text-align: center;
+  margin-top: 6px;
+  font-weight: 700;
+  font-size: 1.7rem;
+}
+
+.logo img {
+  display: block;
+  margin: 0 auto;
+  width: min(150px, 26vh);
+  max-width: 100%;
+  height: auto;
+}
+
+.logo i {
+  color: var(--red);
+  font-style: normal;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .35);
+  padding: 20px;
+}
+
+.overlay.open {
+  display: flex;
+}
+
+.modal {
+  background: var(--modal);
+  border-radius: 24px;
+  padding: 28px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.modal p {
+  margin: 0 0 6px;
+  font-size: 1.3rem;
+}
+
+.modal small {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 28px;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+.btns {
+  display: flex;
+  gap: 14px;
+}
+
+.btns button {
+  flex: 1;
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid var(--red);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.settings-btn {
+  border: none;
+  background: transparent;
+  color: var(--red);
+  font-size: 2.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-btn:focus-visible {
+  outline: 3px solid var(--fg);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.settings-panel {
+  max-width: 420px;
+  margin: 16px auto 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.settings-panel h3 {
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+
+.settings-panel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.settings-panel li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+#confirm {
+  background: var(--red);
+  color: var(--on-red);
+}
+
+#cancel {
+  background: transparent;
+  color: var(--red);
+}
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: var(--bg);
+  padding: 12px 20px;
+  border-radius: 10px;
+  display: none;
+}
+
+#toast.show {
+  display: block;
+}
+
+.settings-page {
+  max-width: 420px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.settings-box {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.settings-btn i, .settings-btn:visited,
+.settings-btn:link {
+  text-decoration: none;
+}
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-list li {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0;
+}
+
+.logout-btn,
+.back-link {
+  display: inline-block;
+  margin-top: 10px;
+  text-decoration: none;
+  color: var(--red);
+  font-weight: 600;
+}
+
+.logout-btn {
+  background: var(--red);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  cursor: pointer;
+}
+
+.send-options {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  font-family: "Outfit", system-ui, sans-serif;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+#sendTarget,
+#yearLevel {
+  width: 180px;
+  max-width: 100%;
+  min-height: 20px;
+  padding: 2px 2px;
+  border: 1px solid var(--red);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background: white;
+}
