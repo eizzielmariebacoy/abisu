@@ -9,25 +9,28 @@ function respond($statusCode, array $body)
     exit;
 }
 
-function sendCloudSMS($destination, $message, $apiKey, $apiSecret)
+function sendTextBeeSMS(array $recipients, $message, $apiKey)
 {
     $payload = json_encode([
-        'destination' => $destination,
+        'recipients' => $recipients,
         'message' => $message,
     ]);
 
     if ($payload === false) {
-        return ['status' => 'error', 'message' => 'Could not encode SMS request.'];
+        return ['status' => 'error', 'message' => 'Could not encode TextBee request.'];
     }
 
-    $ch = curl_init('https://api.cloudsms.io/v1/sms/send');
-    curl_setopt_array($ch, [
+    $ch = curl_init('https://api.textbee.dev/api/v1/gateway/send-sms');
+    if ($ch === false) {
+        return ['status' => 'error', 'message' => 'Could not initialize the TextBee request.'];
+    }
+
+    $configured = curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
-        CURLOPT_USERPWD => $apiKey . ':' . $apiSecret,
         CURLOPT_HTTPHEADER => [
+            'x-api-key: ' . $apiKey,
             'Content-Type: application/json',
             'Accept: application/json',
         ],
@@ -35,18 +38,26 @@ function sendCloudSMS($destination, $message, $apiKey, $apiSecret)
         CURLOPT_TIMEOUT => 30,
     ]);
 
+    if (!$configured) {
+        curl_close($ch);
+        return ['status' => 'error', 'message' => 'Could not configure the TextBee request.'];
+    }
+
     $response = curl_exec($ch);
     $curlError = curl_error($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
     if ($response === false) {
-        return ['status' => 'error', 'message' => 'Could not reach CloudSMS.', 'detail' => $curlError];
+        return ['status' => 'error', 'message' => 'Could not reach TextBee.', 'detail' => $curlError];
     }
 
     $responseData = json_decode($response, true);
     if ($httpCode < 200 || $httpCode >= 300 ||
-        !is_array($responseData) || ($responseData['success'] ?? false) !== true) {
+        !is_array($responseData) ||
+        ($responseData['data']['success'] ?? false) !== true ||
+        !isset($responseData['data']['recipientCount']) ||
+        !is_int($responseData['data']['recipientCount'])) {
         return [
             'status' => 'error',
             'code' => $httpCode,
@@ -89,27 +100,16 @@ if (is_file($privateConfigPath)) {
     $privateConfig = $loadedConfig;
 }
 
-$apiKey = getenv('CLOUDSMS_API_KEY');
+$apiKey = getenv('TEXTBEE_API_KEY');
 $apiKey = $apiKey !== false && trim($apiKey) !== ''
     ? trim($apiKey)
-    : trim((string) ($privateConfig['api_key'] ?? ''));
-$apiSecret = getenv('CLOUDSMS_API_SECRET');
-$apiSecret = $apiSecret !== false && trim($apiSecret) !== ''
-    ? trim($apiSecret)
-    : trim((string) ($privateConfig['api_secret'] ?? ''));
+    : trim((string) ($privateConfig['textbee_api_key'] ?? ''));
 
-if ($apiKey === '' || $apiSecret === '') {
-    $missingSettings = [];
-    if ($apiKey === '') {
-        $missingSettings[] = 'CLOUDSMS_API_KEY';
-    }
-    if ($apiSecret === '') {
-        $missingSettings[] = 'CLOUDSMS_API_SECRET';
-    }
+if ($apiKey === '') {
     respond(503, [
         'status' => 'error',
-        'message' => 'SMS service is not configured. Missing: ' . implode(', ', $missingSettings) .
-            '. Set the server environment variables or add api_key and api_secret to ' . $privateConfigPath . '.'
+        'message' => 'SMS service is not configured. Set TEXTBEE_API_KEY or add textbee_api_key to ' .
+            $privateConfigPath . '.'
     ]);
 }
 
@@ -172,31 +172,66 @@ if (count($recipients) === 0) {
     respond(404, ['status' => 'error', 'message' => 'No phone number was found for that recipient group.']);
 }
 
-if (count($recipients) > 1) {
-    respond(409, [
-        'status' => 'error',
-        'message' => 'Test mode allows one recipient only. No SMS was sent.'
-    ]);
-}
-
 if (!function_exists('curl_init')) {
     respond(503, ['status' => 'error', 'message' => 'The PHP cURL extension is not enabled.']);
 }
 
-$result = sendCloudSMS($recipients[0], $message, $apiKey, $apiSecret);
+$result = sendTextBeeSMS($recipients, $message, $apiKey);
 if ($result['status'] !== 'success') {
     respond(502, [
         'status' => 'error',
-        'message' => $result['message'] ?? 'CloudSMS rejected the request.',
+        'message' => $result['message'] ?? 'TextBee rejected the request.',
         'provider_http_code' => $result['code'] ?? null,
         'detail' => isset($result['response'])
             ? (is_string($result['response']) ? $result['response'] : json_encode($result['response']))
             : ($result['detail'] ?? ''),
     ]);
 }
+$sentCount = $result['response']['data']['recipientCount'];
+
+$historyConn = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+if ($historyConn->connect_errno) {
+    error_log('SMS was accepted by TextBee, but the history database connection failed: ' . $historyConn->connect_error);
+    respond(500, [
+        'status' => 'error',
+        'message' => 'TextBee accepted the SMS, but message history could not be saved. Do not resend; check the database and history page.'
+    ]);
+}
+
+$action = 'SMS sent';
+$details = 'Recipient group: ' . $sendTarget . "\nAccepted by provider: " .
+    $sentCount . ' of ' . count($recipients) . "\n\n" . $message;
+$userEmail = $_SESSION['email'];
+$historyStmt = $historyConn->prepare(
+    'INSERT INTO history (user_email, action, details, created_at) VALUES (?, ?, ?, NOW())'
+);
+
+if (!$historyStmt) {
+    error_log('SMS was accepted by TextBee, but preparing the history insert failed: ' . $historyConn->error);
+    $historyConn->close();
+    respond(500, [
+        'status' => 'error',
+        'message' => 'TextBee accepted the SMS, but message history could not be saved. Do not resend; check the database and history page.'
+    ]);
+}
+
+$historyStmt->bind_param('sss', $userEmail, $action, $details);
+if (!$historyStmt->execute()) {
+    error_log('SMS was accepted by TextBee, but inserting message history failed: ' . $historyStmt->error);
+    $historyStmt->close();
+    $historyConn->close();
+    respond(500, [
+        'status' => 'error',
+        'message' => 'TextBee accepted the SMS, but message history could not be saved. Do not resend; check the database and history page.'
+    ]);
+}
+
+$historyStmt->close();
+$historyConn->close();
 
 respond(200, [
     'status' => 'success',
-    'message' => 'SMS accepted by CloudSMS.',
-    'sent_count' => 1,
+    'message' => 'SMS batch accepted by TextBee.',
+    'sent_count' => $sentCount,
+    'batch_id' => $result['response']['data']['smsBatchId'] ?? null,
 ]);
