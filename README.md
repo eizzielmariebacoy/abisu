@@ -3,7 +3,7 @@
 front-end:
 AbiSU.png, homepage.php, hompage.css, index.js
 
-backend:
+back-end:
 api.php, connect.php, history.php, logout.php, save_notice.php, settings.php
 
 exluded:
