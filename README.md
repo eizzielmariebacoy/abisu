@@ -1,5 +1,7 @@
 # abisu
 
+Ab!SU is a weather advisory and class suspension system developed for ITE 18 - APPLICATIONS DEVELOPMENT AND EMERGING TECHNOLOGIES.
+
 front-end:
 AbiSU.png, homepage.php, hompage.css, index.js
 
